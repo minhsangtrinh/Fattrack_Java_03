@@ -1,0 +1,19 @@
+server:
+  address: 127.0.0.1
+  port: ${SERVER_PORT:8091}
+
+spring:
+  application:
+    name: redis-caching
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5433/product_cache
+    username: caching_demo
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6390
+      connect-timeout: 2s
+      timeout: 2s

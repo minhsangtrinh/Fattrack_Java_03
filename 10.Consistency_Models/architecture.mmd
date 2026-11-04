@@ -1,0 +1,19 @@
+flowchart TD
+    CLIENT["Client: session version + committed write response"] --> API["Application API"]
+    API --> AUTH["Auth: authoritative reads and writes"]
+    API --> CONTENT["Profile / Post / Comment / Like writes"]
+    API --> SESSION["Session reads: RYW"]
+    API --> PUBLIC["Public reads: eventual"]
+
+    AUTH --> PRIMARY[("PostgreSQL primary: users, profiles, posts, comments, likes, outbox")]
+    CONTENT --> PRIMARY
+    SESSION -->|Primary until a read source is verified caught up| PRIMARY
+    PRIMARY -->|Synchronous replication for safe failover| STANDBY[("Eligible standby")]
+    PRIMARY -->|Async replication| REPLICA[("Read replica")]
+    PUBLIC --> REPLICA
+    PUBLIC --> CACHE[("Redis: feed, public profile, like count")]
+
+    PRIMARY -->|Committed outbox events| WORKER["Idempotent projection workers"]
+    WORKER -->|Refresh current source data| PRIMARY
+    WORKER --> CACHE
+    WORKER --> DEPENDENCY["Check post-before-comment dependency"]

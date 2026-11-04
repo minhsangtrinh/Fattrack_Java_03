@@ -1,0 +1,12 @@
+flowchart TD
+    CLIENT["Client"] --> API["InventoryController"]
+    API --> STOCK["POST stock-in: transaction + PESSIMISTIC_WRITE"]
+    API --> UPDATE["PUT: expected version + Hibernate Version"]
+    API --> HISTORY["GET history: AuditReader"]
+    STOCK --> CURRENT[("PostgreSQL inventories")]
+    UPDATE --> CURRENT
+    CURRENT -->|Hibernate entity changes in same transaction| ENVERS["Hibernate Envers"]
+    ENVERS --> AUDIT[("inventories_aud")]
+    ENVERS --> REV[("revinfo")]
+    HISTORY --> AUDIT
+    HISTORY --> REV

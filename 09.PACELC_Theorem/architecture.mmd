@@ -1,0 +1,25 @@
+flowchart TD
+    U["50.000 concurrent users"] --> EDGE["Gateway: auth, rate limit, admission control"]
+    EDGE --> LIST["Listing API"]
+    EDGE --> CART["Cart API"]
+    EDGE --> CHECK["Checkout API"]
+
+    LIST --> FRESH{"Snapshot age within 2s?"}
+    REDIS[("Redis Cluster: stock snapshots")] --> FRESH
+    FRESH -->|Yes| DATA["Return stock"]
+    FRESH -->|No| UNKNOWN["Hide count / stock_unknown / 503"]
+
+    REFRESH["Batch snapshot refresher: target 500ms"] -->|Read primary| PG[("PostgreSQL A: primary")]
+    REFRESH -->|Timestamp + version + TTL| REDIS
+    CART -->|RF=3, read/write ONE| CASS[("Cassandra: cart intent only")]
+    CHECK -->|Atomic reservation + order + outbox| PG
+    PG -->|Synchronous WAL apply| STANDBY[("PostgreSQL B: sync standby")]
+    COORD["3 consensus voters + fencing"] -.-> PG
+    COORD -.-> STANDBY
+
+    PG -->|Committed outbox| WORKER["Payment worker"]
+    WORKER -->|Stable idempotency key| PSP["Payment provider"]
+    PSP --> HOOK["Verified webhook + inbox deduplication"]
+    HOOK -->|Conditional state transitions| PG
+    RECON["Reconciliation / cancellation worker"] --> PSP
+    RECON --> PG

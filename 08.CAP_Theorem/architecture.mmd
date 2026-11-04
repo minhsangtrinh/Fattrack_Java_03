@@ -1,0 +1,16 @@
+flowchart TD
+    Client["Web / Mobile Client"] --> LB["Load Balancer / API Gateway"]
+    LB --> API1["Feed API instance 1"]
+    LB --> API2["Feed API instance 2"]
+    API1 --> DB["Cassandra cluster: RF=3, read/write ONE"]
+    API2 --> DB
+    DB --- A["Replica A"]
+    DB --- B["Replica B"]
+    DB --- C["Replica C"]
+    A <-.-> B
+    B <-.-> C
+    C <-.-> A
+    DB --> CDC["CDC connector: PostCreated"]
+    CDC --> Bus["Event bus"]
+    Bus --> Worker["Fan-out worker"]
+    Worker --> DB

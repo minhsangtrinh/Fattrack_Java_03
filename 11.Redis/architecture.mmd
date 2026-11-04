@@ -1,0 +1,7 @@
+flowchart LR
+    CLIENT["Client"] --> API["Spring Boot REST API: 127.0.0.1:8080"]
+    API -->|POST: ZADD| PRIMARY[("Redis primary: host 6379")]
+    PRIMARY -->|Asynchronous replication| REPLICA[("Redis replica: host 6380")]
+    API -->|GET top N: ZREVRANGE WITHSCORES| REPLICA
+    PRIMARY --- PV[("Primary AOF volume")]
+    REPLICA --- RV[("Replica AOF volume")]

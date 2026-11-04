@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant C as Client
+    participant A as Instance A
+    participant DB as PostgreSQL
+    participant L2 as Redis L2
+    participant PS as Redis Pub/Sub
+    participant B as Instance B
+    Note over A,B: Each instance has its own Caffeine L1
+    C->>A: DELETE /products/1
+    A->>DB: DELETE in transaction
+    DB-->>A: Commit succeeds
+    A->>A: Invalidate local L1
+    A->>L2: CacheEvict products::1
+    L2-->>A: Evicted
+    A->>PS: PUBLISH product-deletion "1"
+    PS-->>A: Invalidate L1
+    PS-->>B: Invalidate L1 asynchronously
+    A-->>C: 204 No Content
+    C->>B: GET /products/1 after invalidation
+    B->>L2: Cache miss
+    B->>DB: SELECT product 1
+    DB-->>B: No row
+    B-->>C: 404 Not Found

@@ -1,0 +1,20 @@
+server:
+  address: 127.0.0.1
+  port: 8080
+
+spring:
+  application:
+    name: redis-leaderboard
+  jackson:
+    deserialization:
+      accept-float-as-int: false
+
+leaderboard:
+  redis:
+    key: leaderboard:global
+    primary:
+      host: ${REDIS_PRIMARY_HOST:127.0.0.1}
+      port: ${REDIS_PRIMARY_PORT:6379}
+    replica:
+      host: ${REDIS_REPLICA_HOST:127.0.0.1}
+      port: ${REDIS_REPLICA_PORT:6380}

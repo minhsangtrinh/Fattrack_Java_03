@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: inventory_demo
+      POSTGRES_USER: inventory_demo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting Compose}
+    ports:
+      - "127.0.0.1:5440:5432"
+    volumes:
+      - inventory-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "inventory_demo", "-d", "inventory_demo"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  inventory-data:

@@ -1,0 +1,28 @@
+server:
+  address: 127.0.0.1
+  port: 8094
+
+spring:
+  application:
+    name: inventory-locking
+  jackson:
+    deserialization:
+      accept-float-as-int: false
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5440/inventory_demo
+    username: inventory_demo
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      "hibernate.format_sql": true
+      "org.hibernate.envers.do_not_audit_optimistic_locking_field": false
+      "org.hibernate.envers.store_data_at_delete": true
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
