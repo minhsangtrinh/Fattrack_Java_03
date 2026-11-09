@@ -1,0 +1,84 @@
+classDiagram
+    direction LR
+
+    class Book {
+        <<record>>
+        +UUID id
+        +String title
+        +String author
+    }
+    class Member {
+        <<record>>
+        +UUID id
+        +String name
+    }
+    class Loan {
+        <<record>>
+        +UUID id
+        +UUID bookId
+        +UUID memberId
+        +LocalDate borrowedOn
+        +LocalDate dueOn
+        +LocalDate returnedOn
+        +BigDecimal fine
+        +isActive() boolean
+        +overdueDays(LocalDate date) long
+        +close(LocalDate date, BigDecimal fine) Loan
+    }
+    class BookRepository {
+        <<interface>>
+        +save(Book book) void
+        +findById(UUID id) Optional~Book~
+    }
+    class MemberRepository {
+        <<interface>>
+        +save(Member member) void
+        +findById(UUID id) Optional~Member~
+    }
+    class LoanRepository {
+        <<interface>>
+        +save(Loan loan) void
+        +findById(UUID id) Optional~Loan~
+        +findActiveByBookId(UUID bookId) Optional~Loan~
+    }
+    class FinePolicy {
+        <<interface>>
+        +calculate(long overdueDays) BigDecimal
+    }
+    class DailyFinePolicy {
+        -BigDecimal dailyRate
+        +calculate(long overdueDays) BigDecimal
+    }
+    class FixedFinePolicy {
+        -BigDecimal amount
+        +calculate(long overdueDays) BigDecimal
+    }
+    class BookCatalogService {
+        +addBook(String title, String author) Book
+    }
+    class LendingService {
+        +borrowBook(UUID memberId, UUID bookId, int loanDays) Loan
+        +returnBook(UUID loanId) Loan
+    }
+    class Clock {
+        <<abstract>>
+    }
+
+    Book "1" <-- "0..*" Loan : references by ID
+    Member "1" <-- "0..*" Loan : references by ID
+    BookRepository <|.. InMemoryBookRepository
+    MemberRepository <|.. InMemoryMemberRepository
+    LoanRepository <|.. InMemoryLoanRepository
+    FinePolicy <|.. DailyFinePolicy
+    FinePolicy <|.. FixedFinePolicy
+    BookCatalogService --> BookRepository
+    BookCatalogService ..> Book : creates
+    LendingService --> BookRepository
+    LendingService --> MemberRepository
+    LendingService --> LoanRepository
+    LendingService --> FinePolicy
+    LendingService --> Clock
+    LendingService ..> Loan : creates and closes
+    InMemoryBookRepository o-- Book
+    InMemoryMemberRepository o-- Member
+    InMemoryLoanRepository o-- Loan

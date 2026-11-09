@@ -1,0 +1,66 @@
+classDiagram
+    direction LR
+
+    class CartController {
+        -CartService cartService
+        +addItem(User authenticatedUser, UUID productId, int quantity) Cart
+    }
+
+    class CartService {
+        -ProductRepository productRepository
+        -CartRepository cartRepository
+        +addItem(UUID userId, UUID productId, int quantity) Cart
+    }
+
+    class ProductRepository {
+        <<interface>>
+        +findById(UUID productId) Optional~Product~
+    }
+
+    class CartRepository {
+        <<interface>>
+        +findByUserId(UUID userId) Optional~Cart~
+        +save(Cart cart) Cart
+    }
+
+    class Cart {
+        -UUID id
+        -UUID userId
+        -List~CartItem~ items
+        +Cart(UUID userId)
+        +addProduct(Product product, int quantity) void
+        -findItemByProductId(UUID productId) Optional~CartItem~
+    }
+
+    class CartItem {
+        -UUID id
+        -Product product
+        -int quantity
+        +CartItem(Product product, int quantity)
+        +increaseQuantity(int additionalQuantity) void
+    }
+
+    class Product {
+        -UUID id
+        -String name
+        -BigDecimal price
+    }
+
+    class User {
+        -UUID id
+        -String displayName
+    }
+
+    CartController --> CartService : delegates
+    CartController ..> User : authenticated identity
+    CartService --> ProductRepository : checks product
+    CartService --> CartRepository : loads and saves
+    CartService ..> Cart : creates or updates
+    ProductRepository ..> Product : returns
+    CartRepository ..> Cart : persists
+    User "1" -- "0..1" Cart : owns active cart
+    Cart "1" *-- "0..*" CartItem : contains
+    CartItem "0..*" --> "1" Product : references
+
+    note for Cart "One item per productId. Adding an existing product increases its quantity."
+    note for CartItem "quantity > 0; additionalQuantity > 0"

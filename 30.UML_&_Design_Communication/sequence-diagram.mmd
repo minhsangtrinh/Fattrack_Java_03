@@ -1,0 +1,52 @@
+sequenceDiagram
+    autonumber
+    actor User as Người dùng đã đăng nhập
+    participant Controller as CartController
+    participant Service as CartService
+    participant Products as ProductRepository
+    participant Carts as CartRepository
+    participant Cart as Cart
+    participant Item as CartItem
+
+    User->>Controller: POST /cart/items {productId: X, quantity: Y}
+    Note over User,Controller: Phiên đăng nhập đã được xác thực.<br/>userId lấy từ authenticatedUser, không lấy từ request body.
+    Controller->>Service: addItem(authenticatedUser.id, X, Y)
+
+    alt Y không phải số nguyên dương hợp lệ
+        Service-->>Controller: InvalidQuantity
+        Controller-->>User: HTTP 400 Bad Request
+    else Y hợp lệ
+        Service->>Products: findById(X)
+        Products-->>Service: Optional<Product>
+
+        alt Không tìm thấy sản phẩm X
+            Service-->>Controller: ProductNotFound
+            Controller-->>User: HTTP 404 Not Found
+        else Tìm thấy product
+            Service->>Carts: findByUserId(authenticatedUser.id)
+            Carts-->>Service: Optional<Cart>
+
+            opt Người dùng chưa có giỏ hàng
+                Service->>Cart: «create» Cart(authenticatedUser.id)
+                Note right of Cart: Giỏ mới có ID riêng và danh sách items rỗng.
+            end
+
+            Service->>Cart: addProduct(product, Y)
+            Cart->>Cart: findItemByProductId(X)
+
+            alt Sản phẩm chưa có trong giỏ
+                Cart->>Item: «create» CartItem(product, Y)
+                Cart->>Cart: items.add(newItem)
+            else Sản phẩm đã có trong giỏ
+                Cart->>Item: increaseQuantity(Y)
+                Note right of Item: quantity = quantity hiện tại + Y
+                Item-->>Cart: Đã tăng số lượng
+            end
+
+            Cart-->>Service: Hoàn tất cập nhật giỏ
+            Service->>Carts: save(cart)
+            Carts-->>Service: savedCart
+            Service-->>Controller: savedCart
+            Controller-->>User: HTTP 200 OK + giỏ hàng đã cập nhật
+        end
+    end
